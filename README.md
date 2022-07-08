@@ -1,5 +1,5 @@
 # zoomershell
-Script that install zsh, its plugins and deploys my configs for it
+Script that installs zsh, its plugins and deploys my configs.
 ### Note: This script is only for arch and arch derivative distros
 
 # Features:
