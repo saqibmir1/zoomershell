@@ -21,8 +21,7 @@ Script that installs zsh, its plugins and deploys my configs.
 ```
 git clone https://github.com/saqibmir1/zoomershell.git
 cd zoomershell
-chmod +x zoomershell.sh
-./zoomershell
+./zoomershell.sh
 ```
 
 Enjoy!
