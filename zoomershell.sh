@@ -16,17 +16,21 @@ echo "Making requred directories if not present"
 mkdir -p $HOME/.cache/zsh
 
 #get files from the net
-echo "downloading .zshrc"
+echo "downloading .zshrc..."
 curl https://raw.githubusercontent.com/saqibmir1/dotfiles/master/.zshrc > ~/.zshrc
-echo "downloading aliasrc"
+
+echo "downloading aliasrc..."
 curl https://raw.githubusercontent.com/saqibmir1/dotfiles/master/.config/shell/aliasrc > ~/.config/shell/aliasrc
-echo "downloading fm6000 for ascii art"
-curl https://raw.githubusercontent.com/saqibmir1/dotfiles/master/.local/bin/fm6000
-echo "downloading bash.command not found script for insults"
-sudo wget -O /etc/bash.command-not-found https://raw.githubusercontent.com/hkbakke/bash-insulter/master/src/bash.command-not-found
+
+echo "downloading fm6000 for ascii art..."
+curl https://raw.githubusercontent.com/anhsirk0/fetch-master-6000/master/fm6000.pl > ~/.local/bin/fm6000
+
+echo "downloading bash.command not found script for insults..."
+sudo wget -O /etc/bash.command-not-found https://raw.githubusercontent.com/saqibmir1/bash-insulter/master/src/bash.command-not-found
 
 #finally chsh
 ehco "finally making zsh default shell"
 sudo chsh -s $(which zsh)
 
-echo "NOW LOGOUT AND LOGIN AGAIN TO START USING ZSH"
+echo "NOW LOGOUT AND LOGIN AGAIN TO CHANGES TO APPLY"
+echo "EXITING..."
