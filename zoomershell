@@ -38,6 +38,7 @@ curl https://raw.githubusercontent.com/saqibmir1/dotfiles/master/.config/shell/a
 ehco "finally making zsh default shell"
 sudo chsh -s $(which zsh)
 
+echo "Note: You might need to edit path of zsh-syntax-highlighting according in ~/.zshrc to your distro."
 echo "NOW LOGOUT AND LOGIN AGAIN TO CHANGES TO APPLY"
 echo "EXITING..."
 
