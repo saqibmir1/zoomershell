@@ -1,0 +1,43 @@
+#!/bin/sh
+
+echo "Welcome to ZoomerShell Script"
+echo "This script install configs and packages that i use for the zsh"
+echo "press ENTER to continue to ctrl+c to cancel"
+read
+
+#install packages
+echo "Installing required packages"
+if [[ -f /etc/debian_version ]]; then
+  sudo apt install zsh zsh-syntax-highlighting -y
+
+elif [[ -f /etc/arch-release ]]; then
+  sudo pacman -S zsh zsh-syntax-highlighting --noconfirm --needed
+
+else
+  echo "Unsupported distribution"
+  exit 1
+
+fi
+
+#make dirs if not present
+echo "Making requred directories if not present"
+[ -d "$HOME/.local/bin" ] || mkdir -p $HOME/.local/bin
+[ -d "$HOME/.config/shell" ] || mkdir -p $HOME/.config/shell
+mkdir -p $HOME/.cache/zsh
+
+echo "downloading zshrc..."
+curl https://raw.githubusercontent.com/saqibmir1/dotfiles/master/.zshrc > ~/.zshrc
+
+echo "downloading zprofile..."
+curl https://raw.githubusercontent/saqibmir1/dotfiles/master/.zprofile > ~/.zprofile
+
+echo "downloading aliasrc..."
+curl https://raw.githubusercontent.com/saqibmir1/dotfiles/master/.config/shell/aliasrc > ~/.config/shell/aliasrc
+
+#finally chsh
+ehco "finally making zsh default shell"
+sudo chsh -s $(which zsh)
+
+echo "NOW LOGOUT AND LOGIN AGAIN TO CHANGES TO APPLY"
+echo "EXITING..."
+
