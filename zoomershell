@@ -1,44 +1,132 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-echo "Welcome to ZoomerShell Script"
-echo "This script install configs and packages that i use for the zsh"
-echo "press ENTER to continue to ctrl+c to cancel"
-read
+# vars for colors
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m' # No Color
 
-#install packages
-echo "Installing required packages"
-if [[ -f /etc/debian_version ]]; then
-  sudo apt install zsh zsh-syntax-highlighting -y
+# default plugin list as an array for easy modification
+PLUGINS=(
+    "zsh-syntax-highlighting|https://github.com/zsh-users/zsh-syntax-highlighting.git"
+    "zsh-autosuggestions|https://github.com/zsh-users/zsh-autosuggestions.git"
+)
 
-elif [[ -f /etc/arch-release ]]; then
-  sudo pacman -S zsh zsh-syntax-highlighting --noconfirm --needed
+# helper functions
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-else
-  echo "Unsupported distribution"
-  exit 1
+# check if a command exists
+has_cmd() {
+	command -v "$1" >/dev/null 2>&1
+}
 
-fi
+# -------------------- core logic functions -----------------
 
-#make dirs if not present
-echo "Making requred directories if not present"
-[ -d "$HOME/.local/bin" ] || mkdir -p $HOME/.local/bin
-[ -d "$HOME/.config/shell" ] || mkdir -p $HOME/.config/shell
-mkdir -p $HOME/.cache/zsh
+detect_and_update_os() {
+    case "$(uname -s)" in
+        Darwin)
+            log_info "Detected macOS."
+            if ! has_cmd brew; then
+                log_info "Installing Homebrew..."
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            fi
+            INSTALL_CMD="brew install"
+            ;;
+        Linux)
+            if [ -f /etc/debian_version ]; then
+                log_info "Detected Ubuntu/Debian."
+                sudo apt-get update
+                INSTALL_CMD="sudo apt-get install -y"
+            else
+                log_error "Unsupported Linux distribution."
+                exit 1
+            fi
+            ;;
+        *)
+            log_error "Unknown OS Type."
+            exit 1
+            ;;
+    esac
+}
 
-echo "downloading zshrc..."
-curl https://raw.githubusercontent.com/saqibmir1/dotfiles/master/.zshrc > ~/.zshrc
+install_dependencies() {
+    local deps=("zsh" "git" "curl")
+    for dep in "${deps[@]}"; do
+        if ! has_cmd "$dep"; then
+            log_info "Installing $dep..."
+            $INSTALL_CMD "$dep"
+        fi
+    done
+}
 
-echo "downloading zprofile..."
-curl https://raw.githubusercontent/saqibmir1/dotfiles/master/.zprofile > ~/.zprofile
+setup_oh_my_zsh() {
+    if [ ! -d "$HOME/.oh-my-zsh" ]; then
+        log_info "Installing Oh My Zsh..."
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    fi
+}
 
-echo "downloading aliasrc..."
-curl https://raw.githubusercontent.com/saqibmir1/dotfiles/master/.config/shell/aliasrc > ~/.config/shell/aliasrc
+install_plugins() {
+    local custom_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+    
+    for item in "${PLUGINS[@]}"; do
+        # Splitting the string by the pipe symbol
+        local name="${item%%|*}"
+        local url="${item#*|}"
+        
+        if [ ! -d "$custom_dir/$name" ]; then
+            log_info "Installing plugin: $name"
+            git clone "$url" "$custom_dir/$name"
+        fi
+    done
+}
 
-#finally chsh
-ehco "finally making zsh default shell"
-sudo chsh -s $(which zsh)
+configure_zshrc() {
+    log_info "Updating .zshrc..."
 
-echo "Note: You might need to edit path of zsh-syntax-highlighting according in ~/.zshrc to your distro."
-echo "NOW LOGOUT AND LOGIN AGAIN TO CHANGES TO APPLY"
-echo "EXITING..."
+    local zshrc="$HOME/.zshrc"
 
+    # set theme
+    sed -i.bak 's/^ZSH_THEME=".*"/ZSH_THEME="agnoster"/' "$zshrc"
+
+    # set plugins
+    sed -i.bak 's/^plugins=(.*)/plugins=(git vi-mode zsh-autosuggestions zsh-syntax-highlighting)/' "$zshrc" && rm "${zshrc}.bak"
+
+    # load aliases
+    local alias_cmd='[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/shell/aliasrc" ] && source "${XDG_CONFIG_HOME:-$HOME/.config}/shell/aliasrc"'
+    if ! grep -Fq "shell/aliasrc" "$zshrc"; then
+        echo "$alias_cmd" >> "$zshrc"
+    fi
+
+    # set ~/.local/bin to path
+    local path_cmd='export PATH="$HOME/.local/bin:$PATH"'
+    if ! grep -Fq "$HOME/.local/bin" "$zshrc"; then
+        echo "$path_cmd" >> "$zshrc"
+    fi
+}
+
+set_default_shell() {
+    local zsh_path
+    zsh_path=$(which zsh)
+
+    if [[ "$SHELL" != "$zsh_path" ]]; then
+        log_info "Changing default shell to zsh..."
+        chsh -s "$zsh_path"
+    fi
+}
+
+# --- Execution Flow ---
+main() {
+    detect_and_update_os
+    install_dependencies
+    setup_oh_my_zsh
+    install_plugins
+    configure_zshrc
+    set_default_shell
+    log_success "Zsh environment is ready! Restart your terminal to see changes."
+}
+
+# Run the script
+main "$@"
