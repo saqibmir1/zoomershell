@@ -83,13 +83,46 @@ install_plugins() {
     done
 }
 
+
+install_custom_theme() {
+    local custom_theme_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes"
+    mkdir -p "$custom_theme_dir"
+    
+    local theme_content='PROMPT="%B%{$fg[red]%}[%{$fg[yellow]%}%n%{$fg[green]%}@%{$fg[blue]%}%M %{$fg[magenta]%}%~%{$fg[red]%}]%{$reset_color%}%b $ "'
+    
+    log_info "Creating custom theme 'zoomer'..."
+    echo "$theme_content" > "$custom_theme_dir/zoomer.zsh-theme"
+}
+
+install_vi_cursor_fix() {
+    local custom_msg_path="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/vi_cursor.zsh"
+    log_info "Configuring Vi cursor shapes..."
+    cat > "$custom_msg_path" <<EOF
+# Change cursor shape for different vi modes.
+function zle-keymap-select () {
+    case \$KEYMAP in
+        vicmd) echo -ne '\e[1 q';;      # block
+        viins|main) echo -ne '\e[5 q';; # beam
+    esac
+}
+zle -N zle-keymap-select
+zle-line-init() {
+    zle -K viins # initiate \`vi insert\` as keymap
+    echo -ne "\e[5 q"
+}
+zle -N zle-line-init
+echo -ne '\e[5 q' # Use beam shape cursor on startup.
+preexec() { echo -ne '\e[5 q' ;} # Use beam shape cursor for each new prompt.
+EOF
+}
+
 configure_zshrc() {
     log_info "Updating .zshrc..."
 
     local zshrc="$HOME/.zshrc"
 
     # set theme
-    sed -i.bak 's/^ZSH_THEME=".*"/ZSH_THEME="agnoster"/' "$zshrc"
+    sed -i.bak 's/^ZSH_THEME=".*"/ZSH_THEME="zoomer"/' "$zshrc"
 
     # set plugins
     sed -i.bak 's/^plugins=(.*)/plugins=(git vi-mode zsh-autosuggestions zsh-syntax-highlighting)/' "$zshrc" && rm "${zshrc}.bak"
@@ -123,6 +156,8 @@ main() {
     install_dependencies
     setup_oh_my_zsh
     install_plugins
+    install_custom_theme
+    install_vi_cursor_fix
     configure_zshrc
     set_default_shell
     log_success "Zsh environment is ready! Restart your terminal to see changes."
